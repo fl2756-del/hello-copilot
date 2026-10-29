@@ -97,3 +97,23 @@ async def classify_image(file: UploadFile = File(...)):
         "predicted_class": CIFAR10_CLASSES[index.item()],
         "confidence": round(confidence.item(), 4),
     }
+
+# ---------- Assignment 3: GAN hand-written digit generator (MNIST) ----------
+gan_model = load_model(get_model("GAN"), "models/gan.pth")
+
+
+class DigitRequest(BaseModel):
+    num_samples: int
+
+
+@app.post("/generate_digit")
+def generate_digit(request: DigitRequest):
+    with torch.no_grad():
+        z = torch.randn(request.num_samples, gan_model.latent_dim)  # random noise
+        images = gan_model.generator(z)                              # num_samples x 1 x 28 x 28
+        images = (images + 1) / 2                                     # [-1, 1] -> [0, 1]
+    return {
+        "num_samples": request.num_samples,
+        "image_size": [28, 28],
+        "images": images.squeeze(1).tolist(),  # tensor -> JSON list, like /embedding
+    }

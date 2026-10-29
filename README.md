@@ -39,3 +39,5 @@ curl -X POST http://127.0.0.1:8000/generate \
 docker build -t sps-genai .
 docker run -p 8000:80 sps-genai
 ```
+- **GAN digit generator** (Assignment 3) – `POST /generate_digit`, body `{"num_samples": 1}`
+  Train first with `uv run python train_gan.py` (saves `models/gan.pth`).
