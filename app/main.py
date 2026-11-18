@@ -10,6 +10,7 @@ from torchvision import transforms
 from app.bigram_model import BigramModel
 from helper_lib.model import get_model
 from helper_lib.utils import load_model
+from helper_lib.generator import langevin_generate
 
 app = FastAPI(title="SPS GenAI API")
 
@@ -116,4 +117,44 @@ def generate_digit(request: DigitRequest):
         "num_samples": request.num_samples,
         "image_size": [28, 28],
         "images": images.squeeze(1).tolist(),  # tensor -> JSON list, like /embedding
+    }
+
+
+# ---------- Assignment 4: Diffusion + Energy-Based image generators (CIFAR-10) ----------
+diffusion_model = load_model(get_model("Diffusion"), "models/diffusion.pth")
+ebm_model = load_model(get_model("EBM"), "models/ebm.pth")
+
+
+class DiffusionRequest(BaseModel):
+    num_samples: int
+    diffusion_steps: int = 20
+
+
+@app.post("/generate_cifar_diffusion")
+def generate_cifar_diffusion(request: DiffusionRequest):
+    # start from standard normal noise and run reverse diffusion (generate() already uses no_grad)
+    images = diffusion_model.generate(num_images=request.num_samples,
+                                      diffusion_steps=request.diffusion_steps, image_size=32)  # [0, 1]
+    return {
+        "num_samples": request.num_samples,
+        "image_size": [3, 32, 32],
+        "images": images.tolist(),
+    }
+
+
+class EBMRequest(BaseModel):
+    num_samples: int
+    steps: int = 256
+
+
+@app.post("/generate_cifar_ebm")
+def generate_cifar_ebm(request: EBMRequest):
+    # NO torch.no_grad() here: Langevin dynamics needs gradients of the energy w.r.t. the input image
+    x = torch.rand((request.num_samples, 3, 32, 32)) * 2 - 1           # uniform noise in [-1, 1]
+    images = langevin_generate(ebm_model, x, steps=request.steps, step_size=10.0, noise_std=0.01)
+    images = ((images + 1) / 2).clamp(0, 1)                            # [-1, 1] -> [0, 1]
+    return {
+        "num_samples": request.num_samples,
+        "image_size": [3, 32, 32],
+        "images": images.tolist(),
     }

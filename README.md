@@ -41,3 +41,7 @@ docker run -p 8000:80 sps-genai
 ```
 - **GAN digit generator** (Assignment 3) – `POST /generate_digit`, body `{"num_samples": 1}`
   Train first with `uv run python train_gan.py` (saves `models/gan.pth`).
+- **Diffusion image generator** (Assignment 4, CIFAR-10) – `POST /generate_cifar_diffusion`, body `{"num_samples": 1, "diffusion_steps": 20}`
+  Train first with `uv run python train_diffusion.py` (saves `models/diffusion.pth`).
+- **Energy-based image generator** (Assignment 4, CIFAR-10) – `POST /generate_cifar_ebm`, body `{"num_samples": 1, "steps": 256}`
+  Train first with `uv run python train_ebm.py` (saves `models/ebm.pth`).
